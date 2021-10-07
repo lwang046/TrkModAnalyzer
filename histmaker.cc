@@ -42,18 +42,18 @@ void histmaker(string inputname, string outputname){
     if(i%10000000==0) std::cout << (float) i*100./(float) ch->GetEntries() << "%% processed" << std::endl;
     ch->GetEntry(i);
     if(btag<0.1){
-      if(fabs(eta<1.5)){
+      if(fabs(eta)>1.5){
         h_ljet_heta_ip2d->Fill(pt, seltrk_ip2d);
         h_ljet_heta_pvdz->Fill(pt, fabs(seltrk_pvdz));
-      } else if(fabs(eta)>1.5) {
+      } else if(fabs(eta)<1.5) {
         h_ljet_leta_ip2d->Fill(pt, seltrk_ip2d);
         h_ljet_leta_pvdz->Fill(pt, fabs(seltrk_pvdz));
       }
     } else if(btag>0.4506) {
-      if(fabs(eta<1.5)){
+      if(fabs(eta)>1.5){
         h_bjet_heta_ip2d->Fill(pt, seltrk_ip2d);
         h_bjet_heta_pvdz->Fill(pt, fabs(seltrk_pvdz));
-      } else if(fabs(eta)>1.5) {
+      } else if(fabs(eta)<1.5) {
         h_bjet_leta_ip2d->Fill(pt, seltrk_ip2d);
         h_bjet_leta_pvdz->Fill(pt, fabs(seltrk_pvdz));
       }
