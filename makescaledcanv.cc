@@ -104,7 +104,7 @@ void makescaledcanv(string tag, string region, string var, string dataset, strin
    r2->SetMarkerStyle(21);
 
    c1->SaveAs(("scaled_"+histname+".pdf").c_str());
-
+   c1->SaveAs(("scaled_"+histname+".root").c_str());
 }
 
 

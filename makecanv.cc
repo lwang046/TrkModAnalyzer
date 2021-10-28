@@ -1,4 +1,4 @@
-void makecanv(string tag, string region, string var, string dataset, string era){
+void makecanv(string tag, string region, string var, string dataset, string era, bool SingleEra = false){
    gStyle->SetOptStat(0);
    gStyle->SetOptFit(0);
 
@@ -6,13 +6,19 @@ void makecanv(string tag, string region, string var, string dataset, string era)
    string histqcd = "p_"+tag+"jet_"+region+"eta_"+var+"_QCD";
    string yname = "mean tracks "+var+" (cm)";
 
-   TFile* f1 = TFile::Open("histogram_PTprofile.root", "READ");
+   TFile* f1 = TFile::Open("newhistogram_PTprofile.root", "READ");
    TProfile *h0 = (TProfile *)f1->Get(histqcd.c_str());
    TProfile *h1 = (TProfile *)f1->Get((histname+"B").c_str());
-   TProfile *h2 = (TProfile *)f1->Get((histname+"C").c_str());
-   TProfile *h3 = (TProfile *)f1->Get((histname+"D").c_str());
-   TProfile *h4 = (TProfile *)f1->Get((histname+"E").c_str());
-   TProfile *h5 = (TProfile *)f1->Get((histname+"F").c_str());
+   TProfile *h2;
+   TProfile *h3;
+   TProfile *h4;
+   TProfile *h5;
+   if(!SingleEra) {
+     h2 = (TProfile *)f1->Get((histname+"C").c_str());
+     h3 = (TProfile *)f1->Get((histname+"D").c_str());
+     h4 = (TProfile *)f1->Get((histname+"E").c_str());
+     h5 = (TProfile *)f1->Get((histname+"F").c_str());
+   }
 
    TCanvas * c1 =  new TCanvas("c1", "c1", 800, 800);
 
@@ -25,19 +31,22 @@ void makecanv(string tag, string region, string var, string dataset, string era)
    h0->SetStats(0);
    h0->Draw("ep");
    h1->Draw("ep same");
-   h2->Draw("ep same");
-   h3->Draw("ep same");
-   h4->Draw("ep same");
-   h5->Draw("ep same");
+   if(!SingleEra) {
+     h2->Draw("ep same");
+     h3->Draw("ep same");
+     h4->Draw("ep same");
+     h5->Draw("ep same");
+   }
 
    auto legend = new TLegend(0.6,0.6,0.85,0.85);
-   //auto legend = new TLegend(0.5,0.2,0.7,0.5);
-   legend->AddEntry(h0,"2017 MC","epl");
    legend->AddEntry(h1,"2017B Data","epl");
-   legend->AddEntry(h2,"2017C Data","epl");
-   legend->AddEntry(h3,"2017D Data","epl");
-   legend->AddEntry(h4,"2017E Data","epl");
-   legend->AddEntry(h5,"2017F Data","epl");
+   if(!SingleEra) {
+     legend->AddEntry(h2,"2017C Data","epl");
+     legend->AddEntry(h3,"2017D Data","epl");
+     legend->AddEntry(h4,"2017E Data","epl");
+     legend->AddEntry(h5,"2017F Data","epl");
+   }
+   legend->AddEntry(h0,"2017 MC","epl");
    legend->Draw();
 
    if(tag=="l") {
@@ -59,27 +68,28 @@ void makecanv(string tag, string region, string var, string dataset, string era)
    h1->SetMarkerSize(0.5);
    h1->SetMarkerStyle(21);
 
-   h2->SetLineColor(kGreen);
-   h2->SetLineWidth(2);
-   h2->SetMarkerColor(kGreen);
-   h2->SetMarkerSize(0.5);
-   h2->SetMarkerStyle(21);
-   h3->SetLineColor(kBlue);
-   h3->SetLineWidth(2); 
-   h3->SetMarkerColor(kBlue);
-   h3->SetMarkerSize(0.5);
-   h3->SetMarkerStyle(21);
-   h4->SetLineColor(kCyan);
-   h4->SetLineWidth(2);
-   h4->SetMarkerColor(kCyan);
-   h4->SetMarkerSize(0.5);
-   h4->SetMarkerStyle(21);
-   h5->SetLineColor(kViolet);
-   h5->SetLineWidth(2);
-   h5->SetMarkerColor(kViolet);
-   h5->SetMarkerSize(0.5);
-   h5->SetMarkerStyle(21); 
-
+   if(!SingleEra) {
+     h2->SetLineColor(kGreen);
+     h2->SetLineWidth(2);
+     h2->SetMarkerColor(kGreen);
+     h2->SetMarkerSize(0.5);
+     h2->SetMarkerStyle(21);
+     h3->SetLineColor(kBlue);
+     h3->SetLineWidth(2); 
+     h3->SetMarkerColor(kBlue);
+     h3->SetMarkerSize(0.5);
+     h3->SetMarkerStyle(21);
+     h4->SetLineColor(kCyan);
+     h4->SetLineWidth(2);
+     h4->SetMarkerColor(kCyan);
+     h4->SetMarkerSize(0.5);
+     h4->SetMarkerStyle(21);
+     h5->SetLineColor(kViolet);
+     h5->SetLineWidth(2);
+     h5->SetMarkerColor(kViolet);
+     h5->SetMarkerSize(0.5);
+     h5->SetMarkerStyle(21); 
+   }
 
    c1->cd();          // Go back to the main canvas before defining pad2
    TPad *pad2 = new TPad("pad2", "pad2", 0, 0.05, 1, 0.3);
@@ -93,35 +103,41 @@ void makecanv(string tag, string region, string var, string dataset, string era)
    line->SetLineColor(kRed);
 
    TH1D *r1 = (TH1D*)h1->ProjectionX("h1", "E")->Clone("r1");
-   TH1D *r2 = (TH1D*)h2->ProjectionX("h2", "E")->Clone("r2");
-   TH1D *r3 = (TH1D*)h3->ProjectionX("h3", "E")->Clone("r3");
-   TH1D *r4 = (TH1D*)h4->ProjectionX("h4", "E")->Clone("r4");
-   TH1D *r5 = (TH1D*)h5->ProjectionX("h5", "E")->Clone("r5");
-/*
-   r1->Rebin(2);
-   r2->Rebin(2);
-   r3->Rebin(2);
-   r4->Rebin(2);
-   r5->Rebin(2);
-*/
+   TH1D *r2;
+   TH1D *r3;
+   TH1D *r4;
+   TH1D *r5;
+   if(!SingleEra) {
+     r2 = (TH1D*)h2->ProjectionX("h2", "E")->Clone("r2");
+     r3 = (TH1D*)h3->ProjectionX("h3", "E")->Clone("r3");
+     r4 = (TH1D*)h4->ProjectionX("h4", "E")->Clone("r4");
+     r5 = (TH1D*)h5->ProjectionX("h5", "E")->Clone("r5");
+   }
+
    r1->Sumw2();
-   r2->Sumw2();
-   r3->Sumw2();
-   r4->Sumw2();
-   r5->Sumw2();
+   if(!SingleEra) {
+     r2->Sumw2();
+     r3->Sumw2();
+     r4->Sumw2();
+     r5->Sumw2();
+   }
    h0->Sumw2();
 
    r1->Divide(h0);
-   r2->Divide(h0);
-   r3->Divide(h0);
-   r4->Divide(h0);
-   r5->Divide(h0);
+   if(!SingleEra) {
+     r2->Divide(h0);
+     r3->Divide(h0);
+     r4->Divide(h0);
+     r5->Divide(h0);
+   } 
 
    r1->Draw("ep");
-   r2->Draw("ep same");
-   r3->Draw("ep same");
-   r4->Draw("ep same");
-   r5->Draw("ep same");
+   if(!SingleEra) {
+     r2->Draw("ep same");
+     r3->Draw("ep same");
+     r4->Draw("ep same");
+     r5->Draw("ep same");
+   }
    line->Draw("same");
 
    r1->SetLineColor(kRed);
@@ -140,27 +156,28 @@ void makecanv(string tag, string region, string var, string dataset, string era)
    r1->GetYaxis()->SetLabelSize(0.1);
    r1->GetYaxis()->SetTitleOffset(0.37);
 
-   r2->SetLineColor(kGreen);
-   r2->SetLineWidth(2);
-   r2->SetMarkerColor(kGreen);
-   r2->SetMarkerSize(0.5);
-   r2->SetMarkerStyle(21);
-   r3->SetLineColor(kBlue);
-   r3->SetLineWidth(2);
-   r3->SetMarkerColor(kBlue);
-   r3->SetMarkerSize(0.5);
-   r3->SetMarkerStyle(21);
-   r4->SetLineColor(kCyan);
-   r4->SetLineWidth(2);
-   r4->SetMarkerColor(kCyan);
-   r4->SetMarkerSize(0.5);
-   r4->SetMarkerStyle(21);
-   r5->SetLineColor(kViolet);
-   r5->SetLineWidth(2);
-   r5->SetMarkerColor(kViolet);
-   r5->SetMarkerSize(0.5);
-   r5->SetMarkerStyle(21);
-
+   if(!SingleEra) {
+     r2->SetLineColor(kGreen);
+     r2->SetLineWidth(2);
+     r2->SetMarkerColor(kGreen);
+     r2->SetMarkerSize(0.5);
+     r2->SetMarkerStyle(21);
+     r3->SetLineColor(kBlue);
+     r3->SetLineWidth(2);
+     r3->SetMarkerColor(kBlue);
+     r3->SetMarkerSize(0.5);
+     r3->SetMarkerStyle(21);
+     r4->SetLineColor(kCyan);
+     r4->SetLineWidth(2);
+     r4->SetMarkerColor(kCyan);
+     r4->SetMarkerSize(0.5);
+     r4->SetMarkerStyle(21);
+     r5->SetLineColor(kViolet);
+     r5->SetLineWidth(2);
+     r5->SetMarkerColor(kViolet);
+     r5->SetMarkerSize(0.5);
+     r5->SetMarkerStyle(21);
+   }
 
    for(int ii=0; ii<r1->GetNbinsX(); ii++)
      std::cout << r1->GetBinContent(ii+1) << ", ";
@@ -184,7 +201,8 @@ void makecanv(string tag, string region, string var, string dataset, string era)
      h1->Fit(fmct, "R");
    }
 
-   c1->SaveAs((histname+".pdf").c_str());
+   c1->SaveAs(("new"+histname+".pdf").c_str());
+   c1->SaveAs(("new"+histname+".root").c_str());
 
 }
 

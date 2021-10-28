@@ -10,7 +10,7 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    pad1->SetGridx();         // Vertical grid
    pad1->Draw();             // Draw the upper pad: pad1
    pad1->cd();               // pad1 becomes the current pad
-   pad1->SetLogy();
+   //pad1->SetLogy();
 
    h1->Draw();               // Draw h1
    pad1->Update();
@@ -42,7 +42,7 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    //h1->SetMarkerColor(kBlue);
    h1->SetLineColor(kBlue);
    h1->SetLineWidth(2);
-   h1->GetYaxis()->SetTitle("Entries.");
+   h1->GetYaxis()->SetTitle("A.U.");
    h1->GetYaxis()->SetTitleSize(20);
    h1->GetYaxis()->SetTitleFont(43);
    h1->GetYaxis()->SetTitleOffset(1.55);
@@ -69,16 +69,20 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    pad2->Draw();
    pad2->cd();       // pad2 becomes the current pad
 
-   TH1F *r1 = (TH1F*)h2->Clone("h2");
-   TH1F *r2 = (TH1F*)h2->Clone("h2");
-   r1->Sumw2();
-   r2->Sumw2();
+   TH1F *r1 = (TH1F*)h2->Clone("r1");
+   TH1F *r2 = (TH1F*)h2->Clone("r2");
    r1->Divide(h1);
    r2->Divide(h3);
    r1->Draw("ep"); 
    r2->Draw("ep same"); 
    line->Draw("same");
 
+   pad2->Update();
+   //std::cout << pad2->GetListOfPrimitives() << std::endl;
+   //TPaveStats *st = (TPaveStats*)r2->FindObject("stats");
+   //st->Delete();
+
+   h2->SetStats(0);
    r1->SetStats(0);
    r2->SetStats(0);
    //r1->SetMarkerColor(kBlue);
@@ -106,13 +110,14 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    r1->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
    r1->GetXaxis()->SetLabelSize(15);
 
+   pad2->Modified(); pad2->Update();
+
    return c;
 }
 
-void ptprofile(){
+void ptprofilelog(){
   gROOT->SetBatch(1);
-  gStyle->SetOptStat(1);
-  gStyle->SetOptFit(0);
+  //gStyle->SetOptStat(1);
 
   TFile* f1 = TFile::Open("data/QCD.root", "READ");
   TFile* f2 = TFile::Open("data/JetHT_2017B.root", "READ");
@@ -149,12 +154,12 @@ void ptprofile(){
   xbins[38] = 200.;
 
 
-  TH1F* h1_ip2d = new TH1F("MC_ip2d", "ip2d", 5000, 0.005, 50.005);
+  TH1F* h1_ip2d = new TH1F("MC_ip2d", "ip2d", 450, -6, 3);
   TH1F* h1_pvdz = new TH1F("MC_pvdz", "pvdz", 2000, 0.005, 10.005);
-  TH1F* h2_ip2d = new TH1F("Data_ip2d", "ip2d", 5000, 0.005, 50.005);
+  TH1F* h2_ip2d = new TH1F("Data_ip2d", "ip2d", 450, -6, 3);
   TH1F* h2_pvdz = new TH1F("Data_pvdz", "pvdz", 2000, 0.005, 10.005);
 
-  TH1F* h3_ip2d = new TH1F("MCScaled_ip2d", "ip2d", 5000, 0.005, 50.005);
+  TH1F* h3_ip2d = new TH1F("MCScaled_ip2d", "ip2d", 450, -6, 3);
   TH1F* h3_pvdz = new TH1F("MCScaled_pvdz", "pvdz", 2000, 0.005, 10.005);
 
   for(int i=0; i<t1->GetEntries(); i++){
@@ -163,10 +168,10 @@ void ptprofile(){
     t1->GetEntry(i);
     if(btag_1<0.1){
       if(fabs(eta_1)<1.5 && pt_1>=2. && pt_1<3.) {
-        h1_ip2d->Fill(seltrk_ip2d_1);
+        h1_ip2d->Fill(log10(seltrk_ip2d_1));
         h1_pvdz->Fill(fabs(seltrk_pvdz_1));
 
-        h3_ip2d->Fill(seltrk_ip2d_1*0.78844);
+        h3_ip2d->Fill(log10(seltrk_ip2d_1*0.78844));
         h3_pvdz->Fill(fabs(seltrk_pvdz_1*0.941401));
       }
     }
@@ -178,12 +183,11 @@ void ptprofile(){
     t2->GetEntry(i);
     if(btag_2<0.1){
       if(fabs(eta_2)<1.5 && pt_2>=2. && pt_2<3.) { 
-        h2_ip2d->Fill(seltrk_ip2d_2);
+        h2_ip2d->Fill(log10(seltrk_ip2d_2));
         h2_pvdz->Fill(fabs(seltrk_pvdz_2));
       }
     }
   }
-
 
   h1_ip2d->Sumw2();
   h2_ip2d->Sumw2();
@@ -192,19 +196,12 @@ void ptprofile(){
   h2_ip2d->Scale(1./h2_ip2d->Integral());
   h3_ip2d->Scale(1./h3_ip2d->Integral());
 
-  h1_pvdz->Sumw2();
-  h2_pvdz->Sumw2();
-  h3_pvdz->Sumw2();
-  h1_pvdz->Scale(1./h1_pvdz->Integral());
-  h2_pvdz->Scale(1./h2_pvdz->Integral());
-  h3_pvdz->Scale(1./h3_pvdz->Integral());
+  TCanvas *c1 = MakeCanvas(h1_ip2d, h2_ip2d, h3_ip2d, "log_{10}(IP_{2D}/cm)", "1");
+  c1->SaveAs("ptprofilelog_ip2d.pdf");
+  c1->SaveAs("ptprofilelog_ip2d.root");
+  //TCanvas *c3 = MakeCanvas(h1_pvdz, h2_pvdz, h3_pvdz, "z_{PV}-z_{trk}/cm", "3");
+  //c3->SaveAs("ptprofile_pvdz.pdf");
 
-  TCanvas *c1 = MakeCanvas(h1_ip2d, h2_ip2d, h3_ip2d, "IP_{2D}/cm", "1");
-  c1->SaveAs("ptprofile_ip2dnorm.pdf");
-  c1->SaveAs("ptprofile_ip2dnorm.root");
-  TCanvas *c3 = MakeCanvas(h1_pvdz, h2_pvdz, h3_pvdz, "z_{PV}-z_{trk}/cm", "3");
-  c3->SaveAs("ptprofile_pvdznorm.pdf");
-  c3->SaveAs("ptprofile_pvdznorm.root");
 
 }
 
