@@ -75,12 +75,14 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    r2->Sumw2();
    r1->Divide(h1);
    r2->Divide(h3);
+   r1->GetListOfFunctions()->Delete();
+   r1->SetStats(kFALSE);
+   r2->GetListOfFunctions()->Delete();
+   r2->SetStats(kFALSE);
    r1->Draw("ep"); 
    r2->Draw("ep same"); 
    line->Draw("same");
 
-   r1->SetStats(0);
-   r2->SetStats(0);
    //r1->SetMarkerColor(kBlue);
    r1->SetLineColor(kBlue);
    r1->SetMinimum(0.4);  // Define Y ..
@@ -106,6 +108,8 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    r1->GetXaxis()->SetLabelFont(43); // Absolute font size in pixel (precision 3)
    r1->GetXaxis()->SetLabelSize(15);
 
+   pad2->Modified(); pad2->Update();
+
    return c;
 }
 
@@ -114,8 +118,8 @@ void ptprofile(){
   gStyle->SetOptStat(1);
   gStyle->SetOptFit(0);
 
-  TFile* f1 = TFile::Open("data/QCD.root", "READ");
-  TFile* f2 = TFile::Open("data/JetHT_2017B.root", "READ");
+  TFile* f1 = TFile::Open("data/aJetHT.root", "READ");
+  TFile* f2 = TFile::Open("data/JetHT.root", "READ");
 
   TTree* t1 = (TTree*)f1->Get("emj/seltrktree");
   TTree* t2 = (TTree*)f2->Get("emj/seltrktree");
@@ -149,38 +153,31 @@ void ptprofile(){
   xbins[38] = 200.;
 
 
-  TH1F* h1_ip2d = new TH1F("MC_ip2d", "ip2d", 5000, 0.005, 50.005);
-  TH1F* h1_pvdz = new TH1F("MC_pvdz", "pvdz", 2000, 0.005, 10.005);
-  TH1F* h2_ip2d = new TH1F("Data_ip2d", "ip2d", 5000, 0.005, 50.005);
-  TH1F* h2_pvdz = new TH1F("Data_pvdz", "pvdz", 2000, 0.005, 10.005);
-
-  TH1F* h3_ip2d = new TH1F("MCScaled_ip2d", "ip2d", 5000, 0.005, 50.005);
-  TH1F* h3_pvdz = new TH1F("MCScaled_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h1_ip2d = new TH1F("MC_ip2d", "ip2d", 100, -1, 1);
+  //TH1F* h1_pvdz = new TH1F("MC_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h2_ip2d = new TH1F("Data_ip2d", "ip2d", 100, -1, 1);
+  //TH1F* h2_pvdz = new TH1F("Data_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h3_ip2d = new TH1F("MCScaled_ip2d", "ip2d", 100, -1, 1);
+  //TH1F* h3_pvdz = new TH1F("MCScaled_pvdz", "pvdz", 2000, 0.005, 10.005);
 
   for(int i=0; i<t1->GetEntries(); i++){
-  //for(int i=0; i<1000; i++){
     if(i%10000000==0) std::cout << (float) i*100./(float) t1->GetEntries() << "%% processed" << std::endl;
     t1->GetEntry(i);
-    if(btag_1<0.1){
-      if(fabs(eta_1)<1.5 && pt_1>=2. && pt_1<3.) {
+    if(fabs(eta_1)<1.5) {
         h1_ip2d->Fill(seltrk_ip2d_1);
-        h1_pvdz->Fill(fabs(seltrk_pvdz_1));
+        //h1_pvdz->Fill(fabs(seltrk_pvdz_1));
 
         h3_ip2d->Fill(seltrk_ip2d_1*0.78844);
-        h3_pvdz->Fill(fabs(seltrk_pvdz_1*0.941401));
-      }
+        //h3_pvdz->Fill(fabs(seltrk_pvdz_1*0.941401));
     }
   }
 
   for(int i=0; i<t2->GetEntries(); i++){
-  //for(int i=0; i<1000; i++){
     if(i%10000000==0) std::cout << (float) i*100./(float) t2->GetEntries() << "%% processed" << std::endl;
     t2->GetEntry(i);
-    if(btag_2<0.1){
-      if(fabs(eta_2)<1.5 && pt_2>=2. && pt_2<3.) { 
+    if(fabs(eta_2)<1.5) { 
         h2_ip2d->Fill(seltrk_ip2d_2);
-        h2_pvdz->Fill(fabs(seltrk_pvdz_2));
-      }
+        //h2_pvdz->Fill(fabs(seltrk_pvdz_2));
     }
   }
 

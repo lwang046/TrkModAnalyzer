@@ -1,5 +1,5 @@
 
-TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis title", std::string canv=""){
+TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3=NULL, std::string xtitle="xaxis title", std::string canv=""){
    TCanvas * c =  new TCanvas(("c"+canv).c_str(), "c", 800, 800);
 
    TLine *line = new TLine(h1->GetXaxis()->GetXmin(), 1, h1->GetXaxis()->GetXmax(), 1);
@@ -18,8 +18,8 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    st1->SetName("MC");
    st1->SetX1NDC(0.8);
    st1->SetX2NDC(0.95);
-   st1->SetY1NDC(0.5);
-   st1->SetY2NDC(0.65);
+   st1->SetY1NDC(0.8);
+   st1->SetY2NDC(0.95);
 
    h2->Draw("sames");         // Draw h2 on top of h1
    pad1->Update();
@@ -30,33 +30,35 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    st2->SetY1NDC(0.65);
    st2->SetY2NDC(0.8);
 
+if(h3!=NULL) {
    h3->Draw("sames");
    pad1->Update();
    TPaveStats *st3 = (TPaveStats*)h3->GetListOfFunctions()->FindObject("stats");
    st3->SetName("MC scaled");
    st3->SetX1NDC(0.8);
    st3->SetX2NDC(0.95);
-   st3->SetY1NDC(0.8);
-   st3->SetY2NDC(0.95);
+   st3->SetY1NDC(0.5);
+   st3->SetY2NDC(0.65);
+}
 
-   //h1->SetMarkerColor(kBlue);
-   h1->SetLineColor(kBlue);
+   h1->SetMinimum(0);
+   h1->SetMaximum(0.018);
+   h1->SetLineColor(kBlack);
    h1->SetLineWidth(2);
    h1->GetYaxis()->SetTitle("A.U.");
    h1->GetYaxis()->SetTitleSize(20);
    h1->GetYaxis()->SetTitleFont(43);
    h1->GetYaxis()->SetTitleOffset(1.55);
-   //h2->SetMarkerColor(kBlack);
-   h2->SetLineColor(kBlack);
+   h2->SetLineColor(kBlue);
    h2->SetLineWidth(2);
-   //h3->SetMarkerColor(kGreen);
+if(h3!=NULL) {
    h3->SetLineColor(kGreen);
    h3->SetLineWidth(2);
-
+}
    auto legend = new TLegend(0.55,0.7,0.75,0.85);
-   legend->AddEntry(h1,"MC","pl");
-   legend->AddEntry(h2,"Data 2017B","pl");
-   legend->AddEntry(h3,"MC scaled","pl");
+   legend->AddEntry(h1,"track inclusive","pl");
+   legend->AddEntry(h2,"track 2.0<pt<3.0","pl");
+   if(h3!=NULL) legend->AddEntry(h3,"track 14.0<pt<15.0","pl");
    legend->Draw();
 
    pad1->Modified(); pad1->Update();
@@ -69,32 +71,30 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
    pad2->Draw();
    pad2->cd();       // pad2 becomes the current pad
 
-   TH1F *r1 = (TH1F*)h2->Clone("r1");
-   TH1F *r2 = (TH1F*)h2->Clone("r2");
-   r1->Divide(h1);
+   TH1F *r1 = (TH1F*)h1->Clone("r1");
+   TH1F *r2 = (TH1F*)h1->Clone("r2");
+   r1->Divide(h2);
+   r1->GetListOfFunctions()->Delete();
+   r1->SetStats(kFALSE);
+   r1->Draw("ep");
+if(h3!=NULL){
    r2->Divide(h3);
-   r1->Draw("ep"); 
+   r2->GetListOfFunctions()->Delete();
+   r2->SetStats(kFALSE);
    r2->Draw("ep same"); 
+}
    line->Draw("same");
 
-   pad2->Update();
-   //std::cout << pad2->GetListOfPrimitives() << std::endl;
-   //TPaveStats *st = (TPaveStats*)r2->FindObject("stats");
-   //st->Delete();
-
-   h2->SetStats(0);
-   r1->SetStats(0);
-   r2->SetStats(0);
    //r1->SetMarkerColor(kBlue);
    r1->SetLineColor(kBlue);
    r1->SetMinimum(0.4);  // Define Y ..
    r1->SetMaximum(1.6); // .. range
    //r1->SetMarkerStyle(21);
    //r2->SetMarkerColor(kGreen);
-   r2->SetLineColor(kGreen);
+   if(h3!=NULL) r2->SetLineColor(kGreen);
 
    r1->SetTitle(""); // Remove the ratio title
-   r1->GetYaxis()->SetTitle("Data/MC");
+   r1->GetYaxis()->SetTitle("incl./cut.");
 
    r1->GetYaxis()->SetNdivisions(505);
    r1->GetYaxis()->SetTitleSize(20);
@@ -117,31 +117,29 @@ TCanvas * MakeCanvas(TH1F* h1, TH1F* h2, TH1F* h3, std::string xtitle="xaxis tit
 
 void ptprofilelog(){
   gROOT->SetBatch(1);
-  //gStyle->SetOptStat(1);
 
-  TFile* f1 = TFile::Open("data/QCD.root", "READ");
-  TFile* f2 = TFile::Open("data/JetHT_2017B.root", "READ");
+  TFile* f1 = TFile::Open("data/JetHT.root", "READ");
+  TFile* f2 = TFile::Open("data/aJetHT.root", "READ");
 
-  TTree* t1 = (TTree*)f1->Get("emj/seltrktree");
-  TTree* t2 = (TTree*)f2->Get("emj/seltrktree");
+  TTree* t1 = (TTree*)f1->Get("emj/alltrktree");
+  TTree* t2 = (TTree*)f2->Get("emj/alltrktree");
 
-  double seltrk_ip2d_1, seltrk_pvdz_1, btag_1;
-  double seltrk_ip2d_2, seltrk_pvdz_2, btag_2;
+  double alltrk_ip2d_1, alltrk_pvdz_1;
+  double alltrk_ip2d_2, alltrk_pvdz_2;
   double pt_1, eta_1;
   double pt_2, eta_2;
+  double alltrk_ip2dfromcanddxy;
 
-  t1->SetBranchAddress("seltrk_ip2d", &seltrk_ip2d_1);
-  t1->SetBranchAddress("seltrk_pvdz", &seltrk_pvdz_1);
-  t1->SetBranchAddress("btagscore2", &btag_1);
-  t1->SetBranchAddress("seltrk_pt", &pt_1);
-  t1->SetBranchAddress("seltrk_eta", &eta_1);
+  t1->SetBranchAddress("alltrk_ip2dfromdxy", &alltrk_ip2d_1);
+  //t1->SetBranchAddress("alltrk_pvdz", &alltrk_pvdz_1);
+  t1->SetBranchAddress("alltrk_pt", &pt_1);
+  t1->SetBranchAddress("alltrk_eta", &eta_1);
 
-  t2->SetBranchAddress("seltrk_ip2d", &seltrk_ip2d_2);  
-  t2->SetBranchAddress("seltrk_pvdz", &seltrk_pvdz_2);
-  t2->SetBranchAddress("btagscore2", &btag_2);
-  t2->SetBranchAddress("seltrk_pt", &pt_2);
-  t2->SetBranchAddress("seltrk_eta", &eta_2);
-
+  t2->SetBranchAddress("alltrk_ip2dfromdxy", &alltrk_ip2d_2);  
+  //t2->SetBranchAddress("alltrk_pvdz", &alltrk_pvdz_2);
+  t2->SetBranchAddress("alltrk_pt", &pt_2);
+  t2->SetBranchAddress("alltrk_eta", &eta_2);
+  //t2->SetBranchAddress("alltrk_ip2dfromcanddxy", &alltrk_ip2dfromcanddxy);  
 
   double xbins1[20], xbins2[18];
   for(int ii=0; ii<20; ii++){
@@ -154,39 +152,39 @@ void ptprofilelog(){
   xbins[38] = 200.;
 
 
-  TH1F* h1_ip2d = new TH1F("MC_ip2d", "ip2d", 450, -6, 3);
-  TH1F* h1_pvdz = new TH1F("MC_pvdz", "pvdz", 2000, 0.005, 10.005);
-  TH1F* h2_ip2d = new TH1F("Data_ip2d", "ip2d", 450, -6, 3);
-  TH1F* h2_pvdz = new TH1F("Data_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h1_ip2d = new TH1F("h1_ip2d", "ip2d", 450, -6, 3);
+  TH1F* h1_pvdz = new TH1F("h1_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h2_ip2d = new TH1F("h2_ip2d", "ip2d", 450, -6, 3);
+  TH1F* h2_pvdz = new TH1F("h2_pvdz", "pvdz", 2000, 0.005, 10.005);
 
-  TH1F* h3_ip2d = new TH1F("MCScaled_ip2d", "ip2d", 450, -6, 3);
-  TH1F* h3_pvdz = new TH1F("MCScaled_pvdz", "pvdz", 2000, 0.005, 10.005);
+  TH1F* h3_ip2d = new TH1F("h3_ip2d", "ip2d", 450, -6, 3);
+  TH1F* h3_pvdz = new TH1F("h3_pvdz", "pvdz", 2000, 0.005, 10.005);
 
-  for(int i=0; i<t1->GetEntries(); i++){
-  //for(int i=0; i<1000; i++){
+  /*for(int i=0; i<t1->GetEntries(); i++){
     if(i%10000000==0) std::cout << (float) i*100./(float) t1->GetEntries() << "%% processed" << std::endl;
     t1->GetEntry(i);
-    if(btag_1<0.1){
-      if(fabs(eta_1)<1.5 && pt_1>=2. && pt_1<3.) {
-        h1_ip2d->Fill(log10(seltrk_ip2d_1));
-        h1_pvdz->Fill(fabs(seltrk_pvdz_1));
+    if(fabs(eta_1)<1.5 && pt_1>2 && pt_1<3) {
+        //if(abs(alltrk_ip2d_1)>=0.05) 
+        h1_ip2d->Fill(log10(abs(alltrk_ip2d_1)));
+        //h1_pvdz->Fill(fabs(alltrk_pvdz_1));
 
-        h3_ip2d->Fill(log10(seltrk_ip2d_1*0.78844));
-        h3_pvdz->Fill(fabs(seltrk_pvdz_1*0.941401));
-      }
+        h3_ip2d->Fill(log10(abs(alltrk_ip2d_1*0.78844)));
+        //h3_pvdz->Fill(fabs(alltrk_pvdz_1*0.941401));
     }
-  }
+  }*/
 
   for(int i=0; i<t2->GetEntries(); i++){
-  //for(int i=0; i<1000; i++){
     if(i%10000000==0) std::cout << (float) i*100./(float) t2->GetEntries() << "%% processed" << std::endl;
     t2->GetEntry(i);
-    if(btag_2<0.1){
-      if(fabs(eta_2)<1.5 && pt_2>=2. && pt_2<3.) { 
-        h2_ip2d->Fill(log10(seltrk_ip2d_2));
-        h2_pvdz->Fill(fabs(seltrk_pvdz_2));
-      }
+    if(fabs(eta_2)<3.5) 
+        h1_ip2d->Fill(log10(abs(alltrk_ip2d_2)));
+    if(fabs(eta_2)<3.5 && pt_2>2. && pt_2<3.) { 
+        //if(abs(alltrk_ip2d_2)>=0.05) 
+        h2_ip2d->Fill(log10(abs(alltrk_ip2d_2)));
+        //h2_pvdz->Fill(fabs(alltrk_pvdz_2));
     }
+    if(fabs(eta_2)<3.5 && pt_2>14. && pt_2<15.) 
+        h3_ip2d->Fill(log10(abs(alltrk_ip2d_2)));
   }
 
   h1_ip2d->Sumw2();
